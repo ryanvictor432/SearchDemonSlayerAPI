@@ -1,0 +1,77 @@
+@page "/searchdemonslayerapi"
+@inject HttpClient Http
+
+<h3>Catálogo de Personagens - Demon Slayer</h3>
+
+<div class="mb-3">
+    <input type="text" class="form-control" placeholder="Buscar personagem por nome..." 
+           @bind="searchTerm" @bind:event="oninput" />
+</div>
+
+@if (loading)
+{
+    <p><em>Carregando personagens...</em></p>
+}
+else if (filteredCharacters == null || !filteredCharacters.Any())
+{
+    <p>Nenhum personagem encontrado.</p>
+}
+else
+{
+    <div class="row">
+        @foreach (var character in filteredCharacters)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    @if (!string.IsNullOrEmpty(character.Img))
+                    {
+                        <img src="@character.Img" class="card-img-top" alt="@character.Name" style="height: 300px; object-fit: cover;" />
+                    }
+                    <div class="card-body">
+                        <h5 class="card-title">@character.Name</h5>
+                        <p class="card-text"><strong>Idade:</strong> @character.Age</p>
+                        <p class="card-text"><strong>Raça:</strong> @character.Race</p>
+                        @if (!string.IsNullOrEmpty(character.Quote))
+                        {
+                            <blockquote class="blockquote-footer mt-2">
+                                "@character.Quote"
+                            </blockquote>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<Character> characters = new();
+    private string searchTerm = string.Empty;
+    private bool loading = true;
+
+    private IEnumerable<Character> filteredCharacters => 
+        string.IsNullOrWhiteSpace(searchTerm) 
+            ? characters 
+            : characters.Where(c => c.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Substitua ou ajuste conforme o formato de paginação retornado pela API
+            var response = await Http.GetFromJsonAsync<ApiResponse>("https://www.demonslayer-api.com/api/v1/characters?page=1");
+            if (response?.Content != null)
+            {
+                characters = response.Content;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar API: {ex.Message}");
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+}
